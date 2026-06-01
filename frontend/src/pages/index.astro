@@ -3,7 +3,339 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
-	<main>
-		<h1 class="bg-red-500">Bienvenido al proyecto de Ciencia de Datos</h1>
-	</main>
+  <main>
+    <header class="hero">
+      <div class="hero-glow"></div>
+      <div class="hero-content">
+        <p class="badge">Machine Learning · RandomForest</p>
+        <h1>¿Es este auto<br/><em>recomendable?</em></h1>
+        <p class="subtitle">Ingresa las características del vehículo y nuestro modelo predice si vale la pena comprarlo.</p>
+      </div>
+    </header>
+
+    <section class="form-section">
+      <form id="predict-form" class="card" autocomplete="off">
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="price">Precio (£)</label>
+            <input id="price" name="price" type="number" min="500" placeholder="ej. 12000" required />
+          </div>
+          <div class="field">
+            <label for="age">Antigüedad (años)</label>
+            <input id="age" name="age" type="number" min="0" max="30" placeholder="ej. 5" required />
+          </div>
+
+          <div class="field">
+            <label for="mileage">Kilometraje (mi)</label>
+            <input id="mileage" name="mileage" type="number" min="0" placeholder="ej. 20000" required />
+          </div>
+
+          <div class="field">
+            <label for="mpg">Rendimiento (mpg)</label>
+            <input id="mpg" name="mpg" type="number" step="0.1" min="0" placeholder="ej. 55.0" required />
+          </div>
+
+          <div class="field">
+            <label for="tax">Impuesto anual (£)</label>
+            <input id="tax" name="tax" type="number" min="0" placeholder="ej. 145" required />
+          </div>
+
+          <div class="field">
+            <label for="engineSize">Cilindrada (L)</label>
+            <input id="engineSize" name="engineSize" type="number" step="0.1" min="0.6" max="6" placeholder="ej. 1.6" required />
+          </div>
+
+          <div class="field">
+            <label for="transmission">Transmisión</label>
+            <select id="transmission" name="transmission" required>
+              <option value="" disabled selected>Seleccionar…</option>
+              <option>Automatic</option>
+              <option>Manual</option>
+              <option>Semi-Auto</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="fuelType">Combustible</label>
+            <select id="fuelType" name="fuelType" required>
+              <option value="" disabled selected>Seleccionar…</option>
+              <option>Petrol</option>
+              <option>Diesel</option>
+              <option>Hybrid</option>
+              <option>Electric</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="Manufacturer">Fabricante</label>
+            <select id="Manufacturer" name="Manufacturer" required>
+              <option value="" disabled selected>Seleccionar…</option>
+              <option value="audi">Audi</option>
+              <option value="BMW">BMW</option>
+              <option value="ford">Ford</option>
+              <option value="hyundi">Hyundai</option>
+              <option value="merc">Mercedes</option>
+              <option value="skoda">Škoda</option>
+              <option value="toyota">Toyota</option>
+              <option value="vauxhall">Vauxhall</option>
+              <option value="volkswagen">Volkswagen</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" id="submit-btn">
+          <span id="btn-text">Analizar vehículo</span>
+          <span id="btn-spinner" class="spinner hidden"></span>
+        </button>
+      </form>
+
+      <div id="result" class="result hidden" aria-live="polite"></div>
+    </section>
+  </main>
 </Layout>
+
+<style>
+  /* ── Tokens ── */
+  :root {
+    --bg: #0a0b0f;
+    --surface: #13151c;
+    --border: #1e2130;
+    --accent: #4ade80;
+    --accent-dim: rgba(74, 222, 128, 0.12);
+    --danger: #f87171;
+    --danger-dim: rgba(248, 113, 113, 0.12);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --radius: 14px;
+    --font-head: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  .hero {
+    position: relative;
+    padding: 5rem 2rem 3rem;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(74,222,128,.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-content { position: relative; max-width: 640px; margin: 0 auto; }
+  .badge {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(74,222,128,.35);
+    padding: .3rem .8rem;
+    border-radius: 999px;
+    margin-bottom: 1.4rem;
+  }
+  .hero h1 {
+    font-family: var(--font-head);
+    font-size: clamp(2.2rem, 6vw, 3.8rem);
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 1rem;
+  }
+  .hero h1 em { color: var(--accent); font-style: italic; }
+  .subtitle { color: var(--muted); font-size: 1rem; line-height: 1.7; }
+
+  .form-section {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem;
+    margin-bottom: 1.8rem;
+  }
+  @media (max-width: 520px) { .field-grid { grid-template-columns: 1fr; } }
+
+  .field { display: flex; flex-direction: column; gap: .45rem; }
+  .field.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: .72rem;
+    font-weight: 500;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input, select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: .95rem;
+    padding: .65rem .9rem;
+    width: 100%;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: rgba(74,222,128,.5);
+    box-shadow: 0 0 0 3px rgba(74,222,128,.08);
+  }
+
+  input::placeholder { color: #374151; }
+  select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .8rem center; padding-right: 2rem; }
+
+  button[type="submit"] {
+    width: 100%;
+    padding: .9rem 1.5rem;
+    background: var(--accent);
+    color: #0a0b0f;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    transition: opacity .2s, transform .15s;
+  }
+  button[type="submit"]:hover { opacity: .88; transform: translateY(-1px); }
+  button[type="submit"]:active { transform: translateY(0); }
+  button[type="submit"]:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,.2);
+    border-top-color: #0a0b0f;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none !important; }
+
+  .result {
+    margin-top: 1.4rem;
+    border-radius: var(--radius);
+    padding: 1.8rem;
+    text-align: center;
+    border: 1px solid;
+    animation: fadeIn .4s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .result.yes { background: var(--accent-dim); border-color: rgba(74,222,128,.3); }
+  .result.no  { background: var(--danger-dim);  border-color: rgba(248,113,113,.3); }
+  .result .icon { font-size: 2.5rem; margin-bottom: .6rem; }
+  .result .verdict {
+    font-family: var(--font-head);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: .35rem;
+  }
+  .result .desc { color: var(--muted); font-size: .9rem; }
+
+  .result.error { background: var(--danger-dim); border-color: rgba(248,113,113,.3); }
+</style>
+
+<script>
+  const API = 'http://localhost:8000';
+  const form = document.getElementById('predict-form') as HTMLFormElement;
+  const resultEl = document.getElementById('result') as HTMLDivElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const btnText = document.getElementById('btn-text') as HTMLSpanElement;
+  const spinner = document.getElementById('btn-spinner') as HTMLSpanElement;
+
+  function setLoading(loading: boolean) {
+    submitBtn.disabled = loading;
+    btnText.textContent = loading ? 'Analizando…' : 'Analizar vehículo';
+    spinner.classList.toggle('hidden', !loading);
+  }
+
+  function showResult(recommended: boolean) {
+    resultEl.className = `result ${recommended ? 'yes' : 'no'}`;
+    resultEl.innerHTML = recommended
+      ? `<div class="icon">✅</div><div class="verdict">¡Recomendado!</div><div class="desc">El modelo predice que este vehículo es una buena compra.</div>`
+      : `<div class="icon">❌</div><div class="verdict">No recomendado</div><div class="desc">El modelo sugiere que este vehículo no cumple los criterios de calidad.</div>`;
+    resultEl.classList.remove('hidden');
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function showError(msg: string) {
+    resultEl.className = 'result error';
+    resultEl.innerHTML = `<div class="icon">⚠️</div><div class="verdict">Error</div><div class="desc">${msg}</div>`;
+    resultEl.classList.remove('hidden');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    resultEl.classList.add('hidden');
+
+    const fd = new FormData(form);
+    const payload = {
+      price:        Number(fd.get('price')),
+      transmission: String(fd.get('transmission')),
+      mileage:      Number(fd.get('mileage')),
+      fuelType:     String(fd.get('fuelType')),
+      tax:          Number(fd.get('tax')),
+      mpg:          Number(fd.get('mpg')),
+      engineSize:   Number(fd.get('engineSize')),
+      Manufacturer: String(fd.get('Manufacturer')),
+      age:          Number(fd.get('age')),
+    };
+
+    try {
+      const res = await fetch(`${API}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.detail ?? `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      showResult(data.recommended);
+    } catch (err: any) {
+      showError(err?.message ?? 'No se pudo conectar con el servidor.');
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
