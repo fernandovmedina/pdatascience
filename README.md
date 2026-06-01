@@ -1,4 +1,4 @@
-# 🚗 Car Recommendation System — pdatascience
+# Car Recommendation System — pdatascience
 
 A full-stack machine learning application that predicts whether a used car is worth buying based on its characteristics. The model was trained on a dataset of ~97,000 UK used car listings and exposed through a REST API consumed by a modern web frontend.
 
