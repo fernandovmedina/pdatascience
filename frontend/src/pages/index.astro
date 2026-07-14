@@ -306,6 +306,7 @@ import Layout from '../layouts/Layout.astro';
     resultEl.classList.add('hidden');
 
     const fd = new FormData(form);
+    
     const payload = {
       price:        Number(fd.get('price')),
       transmission: String(fd.get('transmission')),
